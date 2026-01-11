@@ -7,6 +7,22 @@ LedgerX is a **scalable, multi-tenant financial infrastructure platform** that e
 
 The system is designed using **industry-standard distributed system patterns** inspired by real-world architectures at **Stripe, AWS, Razorpay, and Auth0**.
 
+Continuous Integration & Deployment
+
+LedgerX uses a CI/CD pipeline to ensure safe, reliable, and repeatable deployments.
+
+Pull requests trigger automated testing and validation
+
+Each service has an independent pipeline
+
+Staging deployments are automatic
+
+Production deployments require manual approval
+
+Secrets are managed via environment-based configuration
+
+This pipeline design mirrors real-world financial systems where correctness and safety are prioritized over rapid deployment.
+
 ---
 
 ## 🧠 Problem Statement
