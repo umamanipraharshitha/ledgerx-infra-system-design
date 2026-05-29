@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum Role {
+  USER
+  ADMIN
+  OWNER
+}
+
+enum LedgerType {
+  SUBSCRIPTION_PAYMENT
+  USAGE_CHARGE
+  REFUND
+  CREDIT
+  MANUAL_ADJUSTMENT
+}
+
+model Tenant {
+  id            String         @id @default(uuid())
+
+  name          String         @unique
+
+  plan          Plan           @default(FREE)
+
+  createdAt     DateTime       @default(now())
+
+  users         User[]
+
+  usages        Usage[]
+
+  subscription  Subscription?
+
+  ledgerEntries LedgerEntry[]
+
+  apiKeys       ApiKey[]
+}
+
+model User {
+  id            String         @id @default(uuid())
+
+  email         String         @unique
+
+  password      String
+
+  role          Role           @default(USER)
+
+  tenantId      String
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+
+  refreshTokens RefreshToken[]
+
+  createdAt     DateTime       @default(now())
+
+  @@index([tenantId])
+}
+
+model Usage {
+  id            String         @id @default(uuid())
+
+  tenantId      String
+
+  endpoint      String
+
+  method        String
+
+  cost          Float          @default(0)
+
+  createdAt     DateTime       @default(now())
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+
+  @@index([createdAt])
+
+  @@index([tenantId, createdAt])
+}
+
+model ApiKey {
+  id            String        @id @default(uuid())
+
+  tenantId      String
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+
+  name          String
+
+  keyHash       String        @unique
+
+  prefix        String
+
+  revoked       Boolean       @default(false)
+
+  lastUsedAt    DateTime?
+
+  createdAt     DateTime      @default(now())
+
+  @@index([tenantId])
+}
+
+model Subscription {
+  id                    String      @id @default(uuid())
+
+  tenantId              String      @unique
+
+  tenant                Tenant      @relation(fields: [tenantId], references: [id])
+
+  stripeCustomerId      String?     @unique
+
+  stripeSubscriptionId  String?     @unique
+
+  plan                  Plan        @default(FREE)
+
+  status                String      @default("ACTIVE")
+
+  currentPeriodStart    DateTime?
+
+  currentPeriodEnd      DateTime?
+
+  cancelAtPeriodEnd     Boolean     @default(false)
+
+  createdAt             DateTime    @default(now())
+
+  updatedAt             DateTime    @updatedAt
+}
+
+model LedgerEntry {
+  id            String        @id @default(uuid())
+
+  tenantId      String
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+
+  type          LedgerType
+
+  amount        Float
+
+  currency      String        @default("USD")
+
+  description   String?
+
+  referenceId   String?
+
+  createdAt     DateTime      @default(now())
+
+  @@index([tenantId])
+
+  @@index([createdAt])
+}
+
+model ProcessedWebhook {
+  id            String        @id
+
+  processedAt   DateTime      @default(now())
+}
+
+model RefreshToken {
+  id            String        @id @default(uuid())
+
+  userId        String
+
+  user          User          @relation(fields: [userId], references: [id])
+
+  token         String        @unique
+
+  expiresAt     DateTime
+
+  createdAt     DateTime      @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id            String        @id @default(uuid())
+
+  tenantId      String?
+
+  action        String
+
+  actorId       String?
+
+  metadata      Json?
+
+  createdAt     DateTime      @default(now())
+
+  @@index([tenantId])
+
+  @@index([createdAt])
+}
